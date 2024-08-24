@@ -1,6 +1,7 @@
 ---
 title: My first presentation
 author: Thomas Becker
+subtitle: A simple presentation
 ---
 
 ## My first slide
