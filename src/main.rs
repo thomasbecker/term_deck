@@ -18,23 +18,12 @@ fn main() {
         match fs::read_to_string(presentation_file) {
             Ok(contents) => {
                 let slides: Vec<&str> = contents.split("<!-- end_slide -->").collect();
-                let mut current_slide = 0;
-                let stdout = stdout();
-                let mut stdout = stdout.lock().into_raw_mode().unwrap();
+                let mut current_slide: usize = 0;
                 let stdin = stdin();
+                let mut stdout = stdout().into_raw_mode().unwrap();
+                render_slide(slides[current_slide], &mut stdout);
                 for c in stdin.keys() {
-                    write!(
-                        stdout,
-                        "{}{}",
-                        termion::clear::All,
-                        termion::cursor::Goto(1, 1)
-                    )
-                    .unwrap();
-                    for (i, line) in slides[current_slide].lines().enumerate() {
-                        writeln!(stdout, "{}{}", termion::cursor::Goto(1, i as u16 + 1), line)
-                            .unwrap();
-                    }
-                    stdout.flush().unwrap();
+                    render_slide(slides[current_slide], &mut stdout);
                     match c.unwrap() {
                         termion::event::Key::Char('h') => {
                             current_slide = current_slide.saturating_sub(1)
@@ -60,4 +49,18 @@ fn main() {
         eprintln!("Please provide a presentation markdown file as an argument!");
         process::exit(1);
     }
+}
+
+fn render_slide(slide: &str, stdout: &mut termion::raw::RawTerminal<std::io::Stdout>) {
+    write!(
+        stdout,
+        "{}{}",
+        termion::clear::All,
+        termion::cursor::Goto(1, 1)
+    )
+    .unwrap();
+    for (i, line) in slide.lines().enumerate() {
+        writeln!(stdout, "{}{}", termion::cursor::Goto(1, i as u16 + 1), line).unwrap();
+    }
+    stdout.flush().unwrap();
 }
