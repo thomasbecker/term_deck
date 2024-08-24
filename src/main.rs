@@ -59,7 +59,11 @@ fn render_slide(slide: &str, stdout: &mut termion::raw::RawTerminal<std::io::Std
         termion::cursor::Goto(1, 1)
     )
     .unwrap();
-    for (i, line) in slide.lines().enumerate() {
+    for (i, line) in slide
+        .lines()
+        .skip_while(|line| line.trim().is_empty())
+        .enumerate()
+    {
         writeln!(stdout, "{}{}", termion::cursor::Goto(1, i as u16 + 1), line).unwrap();
     }
     stdout.flush().unwrap();
