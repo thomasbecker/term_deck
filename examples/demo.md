@@ -8,6 +8,10 @@ subtitle: A simple presentation
 
 First slide content
 
+### Header 2
+
+Lorem ipsum...
+
 <!-- end_slide -->
 
 ## My second slide
@@ -19,3 +23,5 @@ Second slide content
 ## My third slide
 
 Third slide content
+
+### Header 2
