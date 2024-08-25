@@ -1,15 +1,17 @@
 use std::{
     fs,
-    io::{stdin, stdout, Write},
+    io::{stdin, stdout},
     path::Path,
     process,
 };
 
 use regex::Regex;
-use termion::{input::TermRead, raw::IntoRawMode, terminal_size};
+use termion::{input::TermRead, raw::IntoRawMode};
+
+pub mod rendering;
 
 #[derive(Debug)]
-struct Metadata {
+pub struct Metadata {
     author: Option<String>,
     title: Option<String>,
     subtitle: Option<String>,
@@ -32,9 +34,9 @@ fn main() {
                 let mut current_slide: usize = 0;
                 let stdin = stdin();
                 let mut stdout = stdout().into_raw_mode().unwrap();
-                render_slide(slides[current_slide], &metadata, &mut stdout);
+                rendering::render_slide(slides[current_slide], &metadata, &mut stdout);
                 for c in stdin.keys() {
-                    render_slide(slides[current_slide], &metadata, &mut stdout);
+                    rendering::render_slide(slides[current_slide], &metadata, &mut stdout);
                     match c.unwrap() {
                         termion::event::Key::Char('h') => {
                             current_slide = current_slide.saturating_sub(1)
@@ -60,37 +62,6 @@ fn main() {
         eprintln!("Please provide a presentation markdown file as an argument!");
         process::exit(1);
     }
-}
-
-fn render_slide(
-    slide: &str,
-    metadata: &Metadata,
-    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
-) {
-    write!(
-        stdout,
-        "{}{}",
-        termion::clear::All,
-        termion::cursor::Goto(1, 1)
-    )
-    .unwrap();
-    render_title(metadata, stdout);
-    for (i, line) in slide
-        .lines()
-        .skip_while(|line| line.trim().is_empty())
-        .enumerate()
-    {
-        writeln!(stdout, "{}{}", termion::cursor::Goto(1, i as u16 + 1), line).unwrap();
-    }
-    stdout.flush().unwrap();
-}
-
-fn render_title(metadata: &Metadata, stdout: &mut termion::raw::RawTerminal<std::io::Stdout>) {
-    let (width, _) = terminal_size().unwrap();
-    let title = metadata.title.as_ref().unwrap();
-    let padding = (width as usize - title.len()) / 2;
-    let spaces = " ".repeat(padding);
-    write!(stdout, "{}{}\n\n\n", spaces, title).unwrap();
 }
 
 fn parse_metadata(content: &str) -> (Metadata, String) {
