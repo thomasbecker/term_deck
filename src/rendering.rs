@@ -1,6 +1,6 @@
 use crate::Metadata;
 use std::io::Write;
-use termion::terminal_size;
+use termion::{color, terminal_size};
 
 pub fn render_slide(
     slide: &str,
@@ -20,7 +20,7 @@ pub fn render_slide(
         .skip_while(|line| line.trim().is_empty())
         .enumerate()
     {
-        writeln!(stdout, "{}{}", termion::cursor::Goto(1, i as u16 + 1), line).unwrap();
+        writeln!(stdout, "{}{}", termion::cursor::Goto(1, i as u16 + 4), line).unwrap();
     }
     stdout.flush().unwrap();
 }
@@ -30,5 +30,13 @@ pub fn render_title(metadata: &Metadata, stdout: &mut termion::raw::RawTerminal<
     let title = metadata.title.as_ref().unwrap();
     let padding = (width as usize - title.len()) / 2;
     let spaces = " ".repeat(padding);
-    write!(stdout, "{}{}\n\n\n", spaces, title).unwrap();
+    write!(
+        stdout,
+        "{}{}{}{}",
+        color::Fg(color::Rgb(243, 139, 168)),
+        spaces,
+        title,
+        color::Fg(color::Reset)
+    )
+    .unwrap();
 }
