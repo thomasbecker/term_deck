@@ -17,6 +17,40 @@ pub struct Metadata {
     subtitle: Option<String>,
 }
 
+pub struct Presentation<'a> {
+    current_slide: usize,
+    slides: Vec<&'a str>,
+    metadata: Metadata,
+}
+
+impl Presentation<'_> {
+    pub fn new(metadata: Metadata, slides: Vec<&str>) -> Presentation {
+        Presentation {
+            current_slide: 0,
+            slides,
+            metadata,
+        }
+    }
+
+    pub fn total_slides(&self) -> usize {
+        self.slides.len()
+    }
+
+    pub fn current_slide(&self) -> &str {
+        self.slides[self.current_slide]
+    }
+
+    pub fn move_to_previous_slide(&mut self) {
+        self.current_slide = self.current_slide.saturating_sub(1);
+    }
+
+    pub fn move_to_next_slide(&mut self) {
+        if self.current_slide < self.slides.len() - 1 {
+            self.current_slide = self.current_slide.saturating_add(1);
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() > 1 {
@@ -31,20 +65,18 @@ fn main() {
                 let slides: Vec<&str> = content_without_metadata
                     .split("<!-- end_slide -->")
                     .collect();
-                let mut current_slide: usize = 0;
+                let mut presentation = Presentation::new(metadata, slides);
                 let stdin = stdin();
                 let mut stdout = stdout().into_raw_mode().unwrap();
-                rendering::render_slide(slides[current_slide], &metadata, &mut stdout);
+                rendering::render_slide(&presentation, &mut stdout);
                 for c in stdin.keys() {
-                    rendering::render_slide(slides[current_slide], &metadata, &mut stdout);
+                    rendering::render_slide(&presentation, &mut stdout);
                     match c.unwrap() {
                         termion::event::Key::Char('h') => {
-                            current_slide = current_slide.saturating_sub(1)
+                            presentation.move_to_previous_slide();
                         }
                         termion::event::Key::Char('l') => {
-                            if current_slide < slides.len() - 1 {
-                                current_slide = current_slide.saturating_add(1)
-                            }
+                            presentation.move_to_next_slide();
                         }
                         termion::event::Key::Char('q') => {
                             break;

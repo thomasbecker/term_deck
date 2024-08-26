@@ -1,6 +1,10 @@
-use crate::Metadata;
+use crate::Presentation;
 use std::{fmt::Display, io::Write};
-use termion::{color, cursor, style, terminal_size};
+use termion::{
+    color,
+    cursor::{self, DetectCursorPos},
+    style, terminal_size,
+};
 
 enum Header {
     Header1,
@@ -31,13 +35,13 @@ impl Header {
 }
 
 pub fn render_slide(
-    slide: &str,
-    metadata: &Metadata,
+    presentation: &Presentation,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
 ) {
     write!(stdout, "{}{}", termion::clear::All, cursor::Goto(1, 1)).unwrap();
-    render_title(metadata, stdout);
-    for (i, line) in slide
+    render_text_centered(presentation.metadata.title.as_ref().unwrap(), false, stdout);
+    for (i, line) in presentation
+        .current_slide()
         .lines()
         .skip_while(|line| line.trim().is_empty())
         .enumerate()
@@ -61,6 +65,16 @@ pub fn render_slide(
         )
         .unwrap();
     }
+    render_text_centered(
+        format!(
+            "{}/{} slides",
+            presentation.current_slide + 1,
+            presentation.total_slides()
+        )
+        .as_str(),
+        true,
+        stdout,
+    );
     stdout.flush().unwrap();
 }
 
@@ -70,18 +84,24 @@ fn extract_prefix(s: &str) -> (String, &str) {
     (prefix, rest)
 }
 
-fn render_title(metadata: &Metadata, stdout: &mut termion::raw::RawTerminal<std::io::Stdout>) {
-    let (width, _) = terminal_size().unwrap();
-    let title = metadata.title.as_ref().unwrap();
-    let padding = (width as usize - title.len()) / 2;
+fn render_text_centered(
+    text: &str,
+    goto_bottom: bool,
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+) {
+    let (width, height) = terminal_size().unwrap();
+    let padding = (width as usize - text.len()) / 2;
     let spaces = " ".repeat(padding);
+    let (_, y) = stdout.cursor_pos().unwrap();
+    let y_position = if goto_bottom { height - 1 } else { y };
     write!(
         stdout,
-        "{}{}{}{}{}{}",
+        "{}{}{}{}{}{}{}",
+        cursor::Goto(1, y_position),
         style::Bold,
         color::Fg(color::Rgb(243, 139, 168)),
         spaces,
-        title,
+        text,
         color::Fg(color::Reset),
         style::Reset
     )
