@@ -8,6 +8,7 @@ use std::{
 use regex::Regex;
 use termion::{input::TermRead, raw::IntoRawMode};
 
+pub mod colors;
 pub mod rendering;
 
 #[derive(Debug)]
@@ -21,6 +22,7 @@ pub struct Presentation<'a> {
     current_slide: usize,
     slides: Vec<&'a str>,
     metadata: Metadata,
+    active_theme: colors::Theme,
 }
 
 impl Presentation<'_> {
@@ -29,6 +31,7 @@ impl Presentation<'_> {
             current_slide: 0,
             slides,
             metadata,
+            active_theme: colors::Theme::CatppuccinMocha,
         }
     }
 

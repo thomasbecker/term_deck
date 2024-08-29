@@ -1,7 +1,7 @@
-use crate::Presentation;
+use crate::{colors::Theme, Presentation};
 use std::{fmt::Display, io::Write, ops::Add};
 use termion::{
-    color,
+    color::{self, Rgb},
     cursor::{self, DetectCursorPos},
     style, terminal_size,
 };
@@ -14,12 +14,12 @@ enum Header {
 }
 
 impl Header {
-    fn color(&self) -> color::Rgb {
+    fn color(&self, theme: &Theme) -> color::Rgb {
         match self {
-            Header::Header1 => color::Rgb(243, 139, 168),
-            Header::Header2 => color::Rgb(166, 227, 161),
-            Header::Header3 => color::Rgb(148, 226, 213),
-            Header::Header4 => color::Rgb(245, 224, 220),
+            Header::Header1 => theme.get_colors().green,
+            Header::Header2 => theme.get_colors().teal,
+            Header::Header3 => theme.get_colors().red,
+            Header::Header4 => theme.get_colors().peach,
         }
     }
 
@@ -39,7 +39,12 @@ pub fn render_slide(
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
 ) {
     write!(stdout, "{}{}", termion::clear::All, cursor::Goto(1, 1)).unwrap();
-    render_text_centered(presentation.metadata.title.as_ref().unwrap(), false, stdout);
+    render_text_centered(
+        presentation.metadata.title.as_ref().unwrap(),
+        false,
+        stdout,
+        presentation.active_theme.get_colors().red,
+    );
     for (i, line) in presentation
         .current_slide()
         .lines()
@@ -49,7 +54,10 @@ pub fn render_slide(
         let (line, color): (&str, Box<dyn Display>) = if line.starts_with("#") {
             let (hash, line) = extract_prefix(line);
             let header = Header::header_by_prefix(&hash).unwrap();
-            (line, Box::new(color::Fg(header.color())))
+            (
+                line,
+                Box::new(color::Fg(header.color(&presentation.active_theme))),
+            )
         } else {
             (line, Box::new(color::Fg(color::Reset)))
         };
@@ -74,11 +82,13 @@ pub fn render_slide(
         .as_str(),
         true,
         stdout,
+        presentation.active_theme.get_colors().green,
     );
     render_progress_bar(
         presentation.current_slide,
         presentation.total_slides(),
         stdout,
+        presentation.active_theme.get_colors().green,
     );
     stdout.flush().unwrap();
 }
@@ -93,6 +103,7 @@ fn render_text_centered(
     text: &str,
     goto_bottom: bool,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+    color: Rgb,
 ) {
     let (width, height) = terminal_size().unwrap();
     let padding = (width as usize - text.len()) / 2;
@@ -104,7 +115,7 @@ fn render_text_centered(
         "{}{}{}{}{}{}{}",
         cursor::Goto(1, y_position),
         style::Bold,
-        color::Fg(color::Rgb(243, 139, 168)),
+        color::Fg(color),
         spaces,
         text,
         color::Fg(color::Reset),
@@ -117,6 +128,7 @@ fn render_progress_bar(
     current_slide: usize,
     total_slides: usize,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+    color: Rgb,
 ) {
     let (width, height) = terminal_size().unwrap();
     let progress_ratio = current_slide.add(1) as f32 / total_slides as f32;
@@ -125,7 +137,7 @@ fn render_progress_bar(
         stdout,
         "{}{}{}{}",
         cursor::Goto(1, height),
-        color::Fg(color::Rgb(243, 139, 168)),
+        color::Fg(color),
         "".repeat(progress_length),
         color::Fg(color::Reset)
     )
