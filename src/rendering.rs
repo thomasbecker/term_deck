@@ -1,5 +1,5 @@
 use crate::Presentation;
-use std::{fmt::Display, io::Write};
+use std::{fmt::Display, io::Write, ops::Add};
 use termion::{
     color,
     cursor::{self, DetectCursorPos},
@@ -75,6 +75,11 @@ pub fn render_slide(
         true,
         stdout,
     );
+    render_progress_bar(
+        presentation.current_slide,
+        presentation.total_slides(),
+        stdout,
+    );
     stdout.flush().unwrap();
 }
 
@@ -104,6 +109,33 @@ fn render_text_centered(
         text,
         color::Fg(color::Reset),
         style::Reset
+    )
+    .unwrap();
+}
+
+fn render_progress_bar(
+    current_slide: usize,
+    total_slides: usize,
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+) {
+    let (width, height) = terminal_size().unwrap();
+    let progress_ratio = current_slide.add(1) as f32 / total_slides as f32;
+    let progress_length = (progress_ratio * width as f32) as usize;
+    write!(
+        stdout,
+        "{}{}{}{}",
+        cursor::Goto(1, height),
+        color::Fg(color::Rgb(243, 139, 168)),
+        "_".repeat(progress_length),
+        color::Fg(color::Reset)
+    )
+    .unwrap();
+
+    write!(
+        stdout,
+        "{}{}",
+        " ".repeat(width as usize - progress_length),
+        cursor::Goto(1, height + 1)
     )
     .unwrap();
 }
