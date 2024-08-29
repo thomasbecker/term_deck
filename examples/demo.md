@@ -25,3 +25,11 @@ Second slide content
 Third slide content
 
 ### Header 2
+
+<!-- end_slide -->
+
+# My fourth slide
+
+Some text about the fourth slide.
+
+## Some content
