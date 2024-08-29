@@ -3,7 +3,8 @@
 Term Deck is a simple terminal-based presentation tool written in Rust. It's
 written in rust...by the way. So it's blazingly fast. It's memory safe. It has
 borrower nightmares...bullshit borrow checker it's called, not nightmares. If it
-compiles, it works. It has zero cost abstractions. It ...
+compiles, it works. It has zero cost abstractions. It's based on web
+assembly...no it's not. It ...
 
 Ok, kidding aside...it allows you to create and navigate through slides directly
 in your terminal. This project was developed primarily as a learning exercise in
