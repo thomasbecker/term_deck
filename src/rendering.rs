@@ -126,7 +126,7 @@ fn render_progress_bar(
         "{}{}{}{}",
         cursor::Goto(1, height),
         color::Fg(color::Rgb(243, 139, 168)),
-        "_".repeat(progress_length),
+        "".repeat(progress_length),
         color::Fg(color::Reset)
     )
     .unwrap();
