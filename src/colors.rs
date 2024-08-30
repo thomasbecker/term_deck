@@ -3,6 +3,7 @@ use termion::color::Rgb;
 pub struct Color {
     pub text: Rgb,
     pub teal: Rgb,
+    pub sky: Rgb,
     pub peach: Rgb,
     pub red: Rgb,
     pub green: Rgb,
@@ -28,6 +29,7 @@ impl Theme {
             Theme::CatppuccinLatte => Color {
                 text: hex_to_rgb("#4c4f69"),
                 teal: hex_to_rgb("#179299"),
+                sky: hex_to_rgb("#04a5e5"),
                 peach: hex_to_rgb("#fe640b"),
                 red: hex_to_rgb("#d20f39"),
                 green: hex_to_rgb("#40a02b"),
@@ -35,6 +37,7 @@ impl Theme {
             Theme::CatppuccinMocha => Color {
                 text: hex_to_rgb("#cdd6f4"),
                 teal: hex_to_rgb("#94e2d5"),
+                sky: hex_to_rgb("#94e2d5"),
                 peach: hex_to_rgb("#fab387"),
                 red: hex_to_rgb("#f38ba8"),
                 green: hex_to_rgb("#a6e3a1"),
@@ -42,6 +45,7 @@ impl Theme {
             Theme::OneDark => Color {
                 text: hex_to_rgb("#abb2bf"),
                 teal: hex_to_rgb("#56b6c2"),
+                sky: hex_to_rgb("#61afef"),
                 peach: hex_to_rgb("#e5c07b"),
                 red: hex_to_rgb("#e06c75"),
                 green: hex_to_rgb("#98c379"),
@@ -54,8 +58,8 @@ impl Theme {
         ThemeColors {
             text: colors.text,
             primary: colors.teal,
-            secondary: colors.peach,
-            tertiary: colors.red,
+            secondary: colors.sky,
+            tertiary: colors.green,
             accent: colors.green,
         }
     }
