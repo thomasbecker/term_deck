@@ -43,7 +43,7 @@ pub fn render_slide(
         presentation.metadata.title.as_ref().unwrap(),
         false,
         stdout,
-        presentation.active_theme.get_colors().red,
+        presentation.current_theme().get_colors().red,
     );
     for (i, line) in presentation
         .current_slide()
@@ -56,7 +56,7 @@ pub fn render_slide(
             let header = Header::header_by_prefix(&hash).unwrap();
             (
                 line,
-                Box::new(color::Fg(header.color(&presentation.active_theme))),
+                Box::new(color::Fg(header.color(presentation.current_theme()))),
             )
         } else {
             (line, Box::new(color::Fg(color::Reset)))
@@ -82,13 +82,13 @@ pub fn render_slide(
         .as_str(),
         true,
         stdout,
-        presentation.active_theme.get_colors().green,
+        presentation.current_theme().get_colors().green,
     );
     render_progress_bar(
         presentation.current_slide,
         presentation.total_slides(),
         stdout,
-        presentation.active_theme.get_colors().green,
+        presentation.current_theme().get_colors().green,
     );
     stdout.flush().unwrap();
 }
@@ -97,6 +97,24 @@ fn extract_prefix(s: &str) -> (String, &str) {
     let prefix = s.chars().take_while(|c| *c == '#').collect::<String>();
     let rest = s.trim_start_matches('#').trim_start();
     (prefix, rest)
+}
+
+pub fn render_text_top_right(
+    text: &str,
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+    color: Rgb,
+) {
+    let (width, _) = terminal_size().unwrap();
+    write!(
+        stdout,
+        "{}{}{}{}",
+        cursor::Goto(width - text.len() as u16, 1),
+        color::Fg(color),
+        text,
+        color::Fg(color::Reset)
+    )
+    .unwrap();
+    stdout.flush().unwrap();
 }
 
 fn render_text_centered(

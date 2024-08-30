@@ -32,6 +32,13 @@ impl Theme {
             },
         }
     }
+
+    pub fn get_name(&self) -> &str {
+        match self {
+            Theme::CatppuccinLatte => "Catppuccino Latte",
+            Theme::CatppuccinMocha => "Catppuccino Mocha",
+        }
+    }
 }
 
 fn hex_to_rgb(hex: &str) -> Rgb {

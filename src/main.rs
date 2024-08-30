@@ -5,7 +5,9 @@ use std::{
     process,
 };
 
+use colors::Theme;
 use regex::Regex;
+use rendering::render_text_top_right;
 use termion::{input::TermRead, raw::IntoRawMode};
 
 pub mod colors;
@@ -22,7 +24,8 @@ pub struct Presentation<'a> {
     current_slide: usize,
     slides: Vec<&'a str>,
     metadata: Metadata,
-    active_theme: colors::Theme,
+    current_theme_index: usize,
+    themes: Vec<&'a Theme>,
 }
 
 impl Presentation<'_> {
@@ -31,7 +34,8 @@ impl Presentation<'_> {
             current_slide: 0,
             slides,
             metadata,
-            active_theme: colors::Theme::CatppuccinMocha,
+            current_theme_index: 0,
+            themes: vec![&Theme::CatppuccinLatte, &Theme::CatppuccinMocha],
         }
     }
 
@@ -41,6 +45,13 @@ impl Presentation<'_> {
 
     pub fn current_slide(&self) -> &str {
         self.slides[self.current_slide]
+    }
+    pub fn current_theme(&self) -> &Theme {
+        self.themes[self.current_theme_index]
+    }
+
+    pub fn cycle_theme(&mut self) {
+        self.current_theme_index = (self.current_theme_index + 1) % self.themes.len();
     }
 
     pub fn move_to_previous_slide(&mut self) {
@@ -80,6 +91,15 @@ fn main() {
                         }
                         termion::event::Key::Char('l') => {
                             presentation.move_to_next_slide();
+                        }
+                        termion::event::Key::Char('t') => {
+                            presentation.cycle_theme();
+                            rendering::render_slide(&presentation, &mut stdout);
+                            rendering::render_text_top_right(
+                                presentation.current_theme().get_name(),
+                                &mut stdout,
+                                presentation.current_theme().get_colors().green,
+                            );
                         }
                         termion::event::Key::Char('q') => {
                             break;
