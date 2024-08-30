@@ -1,5 +1,5 @@
 use crate::{colors::Theme, Presentation};
-use std::{fmt::Display, io::Write, ops::Add};
+use std::{fmt::Display, io::Write, ops::Add, thread, time::Duration};
 use termion::{
     color::{self, Rgb},
     cursor::{self, DetectCursorPos},
@@ -55,15 +55,16 @@ pub fn render_slide(
         .skip_while(|line| line.trim().is_empty())
         .enumerate()
     {
-        let (line, color): (&str, Box<dyn Display>) = if line.starts_with("#") {
-            let (hash, line) = extract_prefix(line);
-            let header = Header::header_by_prefix(&hash).unwrap();
-            (
-                line,
-                Box::new(color::Fg(header.color(presentation.current_theme()))),
-            )
-        } else {
-            (line, Box::new(color::Fg(color::Reset)))
+        let (line, color): (&str, Box<dyn Display>) = match line.starts_with("#") {
+            true => {
+                let (hash, line) = extract_prefix(line);
+                let header = Header::header_by_prefix(&hash).unwrap();
+                (
+                    line,
+                    Box::new(color::Fg(header.color(presentation.current_theme()))),
+                )
+            }
+            _ => (line, Box::new(color::Fg(color::Reset))),
         };
         write!(
             stdout,
@@ -103,19 +104,37 @@ fn extract_prefix(s: &str) -> (String, &str) {
     (prefix, rest)
 }
 
-pub fn render_text_top_right(
+pub async fn render_notification(
     text: &str,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
     color: Rgb,
 ) {
     let (width, _) = terminal_size().unwrap();
+    let start = width - text.len() as u16;
     write!(
         stdout,
         "{}{}{}{}",
-        cursor::Goto(width - text.len() as u16, 1),
+        cursor::Goto(start, 1),
         color::Fg(color),
         text,
         color::Fg(color::Reset)
+    )
+    .unwrap();
+    stdout.flush().unwrap();
+    clear_notification(stdout, start, 3).await;
+}
+
+pub async fn clear_notification(
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+    start: u16,
+    delay_seconds: i8,
+) {
+    thread::sleep(Duration::from_secs(delay_seconds as u64));
+    write!(
+        stdout,
+        "{}{}",
+        cursor::Goto(start, 1),
+        termion::clear::UntilNewline
     )
     .unwrap();
     stdout.flush().unwrap();

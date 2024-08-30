@@ -7,7 +7,6 @@ use std::{
 
 use colors::Theme;
 use regex::Regex;
-use rendering::render_text_top_right;
 use termion::{input::TermRead, raw::IntoRawMode};
 
 pub mod colors;
@@ -65,7 +64,8 @@ impl Presentation<'_> {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() > 1 {
         let presentation_file = &args[1];
@@ -95,11 +95,12 @@ fn main() {
                         termion::event::Key::Char('t') => {
                             presentation.cycle_theme();
                             rendering::render_slide(&presentation, &mut stdout);
-                            rendering::render_text_top_right(
+                            rendering::render_notification(
                                 presentation.current_theme().get_name(),
                                 &mut stdout,
                                 presentation.current_theme().get_colors().green,
-                            );
+                            )
+                            .await;
                         }
                         termion::event::Key::Char('q') => {
                             break;
