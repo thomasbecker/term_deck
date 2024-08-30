@@ -61,7 +61,7 @@ pub fn render_slide(
         } else {
             (line, Box::new(color::Fg(color::Reset)))
         };
-        writeln!(
+        write!(
             stdout,
             "{}{}{}{}{}{}",
             style::Bold,
