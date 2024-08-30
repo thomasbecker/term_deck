@@ -40,7 +40,11 @@ pub fn render_slide(
 ) {
     write!(stdout, "{}{}", termion::clear::All, cursor::Goto(1, 1)).unwrap();
     render_text_centered(
-        presentation.metadata.title.as_ref().unwrap(),
+        presentation
+            .metadata
+            .title
+            .as_ref()
+            .unwrap_or(&String::from("No title found")),
         false,
         stdout,
         presentation.current_theme().get_colors().red,
