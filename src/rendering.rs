@@ -1,8 +1,15 @@
 use crate::{colors::Theme, Presentation};
-use std::{fmt::Display, io::Write, ops::Add, thread, time::Duration};
+use std::{
+    fmt::Display,
+    io::{stdout, Write},
+    ops::Add,
+    thread,
+    time::Duration,
+};
 use termion::{
     color::{self, Rgb},
     cursor::{self, DetectCursorPos},
+    raw::IntoRawMode,
     style, terminal_size,
 };
 
@@ -121,15 +128,14 @@ pub async fn render_notification(
     )
     .unwrap();
     stdout.flush().unwrap();
-    clear_notification(stdout, start, 3).await;
+    tokio::spawn(async move {
+        clear_notification(start, 3).await;
+    });
 }
 
-pub async fn clear_notification(
-    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
-    start: u16,
-    delay_seconds: i8,
-) {
+pub async fn clear_notification(start: u16, delay_seconds: i8) {
     thread::sleep(Duration::from_secs(delay_seconds as u64));
+    let mut stdout = stdout().into_raw_mode().unwrap();
     write!(
         stdout,
         "{}{}",
