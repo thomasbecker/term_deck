@@ -34,7 +34,11 @@ impl Presentation<'_> {
             slides,
             metadata,
             current_theme_index: 0,
-            themes: vec![&Theme::CatppuccinLatte, &Theme::CatppuccinMocha],
+            themes: vec![
+                &Theme::CatppuccinLatte,
+                &Theme::CatppuccinMocha,
+                &Theme::OneDark,
+            ],
         }
     }
 
@@ -98,7 +102,7 @@ async fn main() {
                             rendering::render_notification(
                                 presentation.current_theme().get_name(),
                                 &mut stdout,
-                                presentation.current_theme().get_colors().green,
+                                presentation.current_theme().get_theme_colors().text,
                             )
                             .await;
                         }

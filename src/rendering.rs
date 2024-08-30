@@ -16,10 +16,10 @@ enum Header {
 impl Header {
     fn color(&self, theme: &Theme) -> color::Rgb {
         match self {
-            Header::Header1 => theme.get_colors().green,
-            Header::Header2 => theme.get_colors().teal,
-            Header::Header3 => theme.get_colors().red,
-            Header::Header4 => theme.get_colors().peach,
+            Header::Header1 => theme.get_theme_colors().primary,
+            Header::Header2 => theme.get_theme_colors().secondary,
+            Header::Header3 => theme.get_theme_colors().tertiary,
+            Header::Header4 => theme.get_theme_colors().accent,
         }
     }
 
@@ -47,7 +47,7 @@ pub fn render_slide(
             .unwrap_or(&String::from("No title found")),
         false,
         stdout,
-        presentation.current_theme().get_colors().red,
+        presentation.current_theme().get_theme_colors().primary,
     );
     for (i, line) in presentation
         .current_slide()
@@ -87,13 +87,13 @@ pub fn render_slide(
         .as_str(),
         true,
         stdout,
-        presentation.current_theme().get_colors().green,
+        presentation.current_theme().get_theme_colors().accent,
     );
     render_progress_bar(
         presentation.current_slide,
         presentation.total_slides(),
         stdout,
-        presentation.current_theme().get_colors().green,
+        presentation.current_theme().get_theme_colors().accent,
     );
     stdout.flush().unwrap();
 }

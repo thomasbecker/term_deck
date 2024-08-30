@@ -1,6 +1,6 @@
 use termion::color::Rgb;
 
-pub struct ColorTheme {
+pub struct Color {
     pub text: Rgb,
     pub teal: Rgb,
     pub peach: Rgb,
@@ -8,28 +8,55 @@ pub struct ColorTheme {
     pub green: Rgb,
 }
 
+pub struct ThemeColors {
+    pub text: Rgb,
+    pub primary: Rgb,
+    pub secondary: Rgb,
+    pub tertiary: Rgb,
+    pub accent: Rgb,
+}
+
 pub enum Theme {
     CatppuccinLatte,
     CatppuccinMocha,
+    OneDark,
 }
 
 impl Theme {
-    pub fn get_colors(&self) -> ColorTheme {
+    fn get_colors(&self) -> Color {
         match self {
-            Theme::CatppuccinLatte => ColorTheme {
+            Theme::CatppuccinLatte => Color {
                 text: hex_to_rgb("#4c4f69"),
                 teal: hex_to_rgb("#179299"),
                 peach: hex_to_rgb("#fe640b"),
                 red: hex_to_rgb("#d20f39"),
                 green: hex_to_rgb("#40a02b"),
             },
-            Theme::CatppuccinMocha => ColorTheme {
+            Theme::CatppuccinMocha => Color {
                 text: hex_to_rgb("#cdd6f4"),
                 teal: hex_to_rgb("#94e2d5"),
                 peach: hex_to_rgb("#fab387"),
                 red: hex_to_rgb("#f38ba8"),
                 green: hex_to_rgb("#a6e3a1"),
             },
+            Theme::OneDark => Color {
+                text: hex_to_rgb("#abb2bf"),
+                teal: hex_to_rgb("#56b6c2"),
+                peach: hex_to_rgb("#e5c07b"),
+                red: hex_to_rgb("#e06c75"),
+                green: hex_to_rgb("#98c379"),
+            },
+        }
+    }
+
+    pub fn get_theme_colors(&self) -> ThemeColors {
+        let colors = self.get_colors();
+        ThemeColors {
+            text: colors.text,
+            primary: colors.teal,
+            secondary: colors.peach,
+            tertiary: colors.red,
+            accent: colors.green,
         }
     }
 
@@ -37,6 +64,7 @@ impl Theme {
         match self {
             Theme::CatppuccinLatte => "Catppuccino Latte",
             Theme::CatppuccinMocha => "Catppuccino Mocha",
+            Theme::OneDark => "One Dark",
         }
     }
 }
