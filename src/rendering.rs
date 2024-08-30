@@ -120,11 +120,12 @@ pub async fn render_notification(
     let start = width - text.len() as u16;
     write!(
         stdout,
-        "{}{}{}{}",
+        "{}{}{}{}{}",
         cursor::Goto(start, 1),
         color::Fg(color),
         text,
-        color::Fg(color::Reset)
+        color::Fg(color::Reset),
+        cursor::Hide
     )
     .unwrap();
     stdout.flush().unwrap();
@@ -138,9 +139,10 @@ pub async fn clear_notification(start: u16, delay_seconds: i8) {
     let mut stdout = stdout().into_raw_mode().unwrap();
     write!(
         stdout,
-        "{}{}",
+        "{}{}{}",
         cursor::Goto(start, 1),
-        termion::clear::UntilNewline
+        termion::clear::UntilNewline,
+        cursor::Hide
     )
     .unwrap();
     stdout.flush().unwrap();
