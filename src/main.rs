@@ -88,7 +88,6 @@ async fn main() {
                 let mut stdout = stdout().into_raw_mode().unwrap();
                 rendering::render_slide(&presentation, &mut stdout);
                 for c in stdin.keys() {
-                    rendering::render_slide(&presentation, &mut stdout);
                     match c.unwrap() {
                         termion::event::Key::Char('h') => {
                             presentation.move_to_previous_slide();
@@ -111,6 +110,7 @@ async fn main() {
                         }
                         _ => {}
                     }
+                    rendering::render_slide(&presentation, &mut stdout);
                 }
             }
             Err(err) => {
