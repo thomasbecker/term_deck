@@ -66,8 +66,8 @@ impl Theme {
 
     pub fn get_name(&self) -> &str {
         match self {
-            Theme::CatppuccinLatte => "Catppuccino Latte",
-            Theme::CatppuccinMocha => "Catppuccino Mocha",
+            Theme::CatppuccinLatte => "Catppuccin Latte",
+            Theme::CatppuccinMocha => "Catppuccin Mocha",
             Theme::OneDark => "One Dark",
         }
     }
