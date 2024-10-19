@@ -8,6 +8,8 @@ subtitle: A simple presentation
 
 First slide content
 
+![vi](./images/vi-code-green.png)
+
 ### Header 2
 
 Lorem ipsum...

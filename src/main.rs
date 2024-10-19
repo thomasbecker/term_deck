@@ -21,6 +21,7 @@ pub struct Metadata {
 
 pub struct Presentation<'a> {
     current_slide: usize,
+    presentation_file: &'a str,
     slides: Vec<&'a str>,
     metadata: Metadata,
     current_theme_index: usize,
@@ -28,9 +29,14 @@ pub struct Presentation<'a> {
 }
 
 impl Presentation<'_> {
-    pub fn new(metadata: Metadata, slides: Vec<&str>) -> Presentation {
+    pub fn new<'a>(
+        metadata: Metadata,
+        slides: Vec<&'a str>,
+        presentation_file: &'a str,
+    ) -> Presentation<'a> {
         Presentation {
             current_slide: 0,
+            presentation_file,
             slides,
             metadata,
             current_theme_index: 0,
@@ -83,7 +89,7 @@ async fn main() {
                 let slides: Vec<&str> = content_without_metadata
                     .split("<!-- end_slide -->")
                     .collect();
-                let mut presentation = Presentation::new(metadata, slides);
+                let mut presentation = Presentation::new(metadata, slides, presentation_file);
                 let stdin = stdin();
                 let mut stdout = stdout().into_raw_mode().unwrap();
                 rendering::render_slide(&presentation, &mut stdout);

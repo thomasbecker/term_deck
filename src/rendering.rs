@@ -3,6 +3,7 @@ use std::{
     fmt::Display,
     io::{stdout, Write},
     ops::Add,
+    path::Path,
     thread,
     time::Duration,
 };
@@ -12,6 +13,7 @@ use termion::{
     raw::IntoRawMode,
     style, terminal_size,
 };
+use viuer::{print_from_file, Config};
 
 enum Header {
     Header1,
@@ -62,29 +64,45 @@ pub fn render_slide(
         .skip_while(|line| line.trim().is_empty())
         .enumerate()
     {
-        let (line, color): (&str, Box<dyn Display>) = match line.starts_with("#") {
-            true => {
-                let (hash, line) = extract_prefix(line);
-                let header = Header::header_by_prefix(&hash).unwrap();
-                (
-                    line,
-                    Box::new(color::Fg(header.color(presentation.current_theme()))),
-                )
-            }
-            _ => (line, Box::new(color::Fg(color::Reset))),
-        };
-        write!(
-            stdout,
-            "{}{}{}{}{}{}",
-            style::Bold,
-            cursor::Goto(1, i as u16 + 4),
-            color,
-            line,
-            color::Fg(color::Reset),
-            style::Reset
-        )
-        .unwrap();
+        if let Some(image_path) = extract_image_path(line) {
+            let full_image_path = Path::new(presentation.presentation_file)
+                .parent()
+                .unwrap()
+                .join(image_path);
+            render_image(&full_image_path);
+        } else {
+            let (line, color): (&str, Box<dyn Display>) = match line.starts_with("#") {
+                true => {
+                    let (hash, line) = extract_prefix(line);
+                    let header = Header::header_by_prefix(&hash).unwrap();
+                    (
+                        line,
+                        Box::new(color::Fg(header.color(presentation.current_theme()))),
+                    )
+                }
+                _ => (line, Box::new(color::Fg(color::Reset))),
+            };
+            write!(
+                stdout,
+                "{}{}{}{}{}{}",
+                style::Bold,
+                cursor::Goto(1, i as u16 + 4),
+                color,
+                line,
+                color::Fg(color::Reset),
+                style::Reset
+            )
+            .unwrap();
+        }
     }
+    render_footer(presentation, stdout);
+    stdout.flush().unwrap();
+}
+
+fn render_footer(
+    presentation: &Presentation,
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+) {
     render_text_centered(
         format!(
             "{}/{} slides",
@@ -102,7 +120,23 @@ pub fn render_slide(
         stdout,
         presentation.current_theme().get_theme_colors().accent,
     );
-    stdout.flush().unwrap();
+}
+
+fn extract_image_path(line: &str) -> Option<&str> {
+    if line.starts_with("![") && line.contains("](") && line.ends_with(")") {
+        let start = line.find("](").unwrap() + 2;
+        let end = line.len() - 1;
+        Some(&line[start..end])
+    } else {
+        None
+    }
+}
+
+fn render_image(image_path: &Path) {
+    let config = Config {
+        ..Default::default()
+    };
+    print_from_file(image_path, &config).unwrap();
 }
 
 fn extract_prefix(s: &str) -> (String, &str) {
