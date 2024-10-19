@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-regex = "1.10.6"
-termion = "4.0.2"
-tokio = { version = "1.39.3", features = ["full"] }
+regex = "1.11.0"
+termion = "4.0.3"
+tokio = { version = "1.40.0", features = ["full"] }
+viuer = "0.8.1"
