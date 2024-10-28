@@ -58,6 +58,16 @@ pub fn render_slide(
         stdout,
         presentation.current_theme().get_theme_colors().primary,
     );
+    render_text_centered(
+        presentation
+            .metadata
+            .subtitle
+            .as_ref()
+            .unwrap_or(&String::from("No subtitle found")),
+        false,
+        stdout,
+        presentation.current_theme().get_theme_colors().primary,
+    );
     for (i, line) in presentation
         .current_slide()
         .lines()
@@ -195,14 +205,15 @@ fn render_text_centered(
     let y_position = if goto_bottom { height - 1 } else { y };
     write!(
         stdout,
-        "{}{}{}{}{}{}{}",
+        "{}{}{}{}{}{}{}{}",
         cursor::Goto(1, y_position),
         style::Bold,
         color::Fg(color),
         spaces,
         text,
         color::Fg(color::Reset),
-        style::Reset
+        style::Reset,
+        cursor::Goto(1, y_position + 1)
     )
     .unwrap();
 }
