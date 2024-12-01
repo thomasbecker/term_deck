@@ -7,7 +7,7 @@ edition = "2021"
 regex = "1.11.0"
 termion = "4.0.3"
 tokio = { version = "1.40.0", features = ["full"] }
-viuer = "0.9.1"
+viuer = "0.8.1"
 tree-sitter = "0.24.4"
 tree-sitter-highlight = "0.24.4"
 tree-sitter-java = "0.23.4"
