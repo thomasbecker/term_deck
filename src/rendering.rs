@@ -143,6 +143,12 @@ fn extract_image_path(line: &str) -> Option<&str> {
 }
 
 fn render_image(image_path: &Path) {
+    if !image_path.exists() {
+        eprintln!("Error: File does not exist - {:?}", image_path);
+        std::io::stderr().flush().unwrap(); // Ensure the error message is flushed
+        std::process::exit(1);
+    }
+
     let config = Config {
         ..Default::default()
     };
