@@ -1,7 +1,7 @@
 use crate::{Presentation, Theme};
 use std::{
     fmt::Display,
-    io::{self, stdout, Write},
+    io::{stdout, Write},
     ops::Add,
     path::Path,
     process, thread,
@@ -313,7 +313,7 @@ fn render_code_block(
     write!(
         stdout,
         "{}{}{}{}{}{}",
-        cursor::Goto(indent, start_line - 1),
+        cursor::Goto(indent, start_line),
         style::Bold,
         color::Fg(theme.get_theme_colors().primary),
         block.language,
@@ -324,24 +324,21 @@ fn render_code_block(
 
     let tokens = parse_syntax(&block.content, &block.language, stdout);
 
-    // Track current position in the content
     let mut current_pos = 0;
 
     for (current_line, line) in block.content.lines().enumerate() {
         let line_start = current_pos;
         let line_end = line_start + line.len();
 
-        // Get tokens for this line
         let line_tokens: Vec<_> = tokens
             .iter()
             .filter(|t| t.start >= line_start && t.start < line_end)
             .collect();
 
-        // Write the line with syntax highlighting
         write!(
             stdout,
             "{}",
-            cursor::Goto(indent, start_line + current_line as u16),
+            cursor::Goto(indent, start_line + 1 + current_line as u16),
         )
         .unwrap();
 
