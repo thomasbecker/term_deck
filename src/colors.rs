@@ -60,7 +60,7 @@ impl Theme {
             primary: colors.teal,
             secondary: colors.sky,
             tertiary: colors.green,
-            accent: colors.green,
+            accent: colors.peach,
         }
     }
 

@@ -380,6 +380,8 @@ fn render_code_block(
                         // Write colored text
                         write!(
                             stdout,
+                            // "{:?}{}{}{}",
+                            // token.kind,
                             "{}{}{}",
                             color::Fg(token.kind.color(theme)),
                             &line[current_pos..token_end_in_line],
