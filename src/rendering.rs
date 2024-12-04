@@ -33,8 +33,14 @@ struct CodeBlock {
 #[derive(Debug)]
 enum SyntaxKind {
     Keyword,
+    Bracket,
+    Delimiter,
+    Conditional,
+    Repeat,
+    Constant,
     Function,
     Type,
+    Spell,
     String,
     Number,
     Comment,
@@ -48,7 +54,13 @@ impl SyntaxKind {
     fn color(&self, theme: &Theme) -> Rgb {
         match self {
             SyntaxKind::Keyword => theme.get_theme_colors().primary,
+            SyntaxKind::Conditional => Rgb(247, 118, 142),
+            SyntaxKind::Constant => Rgb(217, 118, 142),
+            SyntaxKind::Repeat => Rgb(117, 118, 142),
+            SyntaxKind::Delimiter => Rgb(155, 118, 142),
+            SyntaxKind::Bracket => Rgb(247, 158, 142),
             SyntaxKind::Function => theme.get_theme_colors().secondary,
+            SyntaxKind::Spell => Rgb(158, 186, 106),
             SyntaxKind::Type => theme.get_theme_colors().tertiary,
             SyntaxKind::String => Rgb(158, 206, 106),
             SyntaxKind::Number => Rgb(247, 118, 142),
@@ -122,15 +134,24 @@ fn parse_syntax(
                 let node = capture.node;
                 let capture_name = &query.capture_names()[capture.index as usize];
 
+                // write!(stdout, "node {}: capture_name: {:?}", node, capture_name).unwrap();
+                // stdout.flush().unwrap();
+
                 let kind = match capture_name.to_string().as_str() {
                     "keyword" => SyntaxKind::Keyword,
+                    "constant" => SyntaxKind::Constant,
+                    "keyword.conditional" => SyntaxKind::Conditional,
+                    "keyword.repeat" => SyntaxKind::Repeat,
+                    "punctuation.bracket" => SyntaxKind::Bracket,
+                    "punctuation.delimiter" => SyntaxKind::Delimiter,
                     "function" => SyntaxKind::Function,
                     "type" => SyntaxKind::Type,
+                    "spell" => SyntaxKind::Spell,
                     "string" => SyntaxKind::String,
                     "number" => SyntaxKind::Number,
                     "comment" => SyntaxKind::Comment,
                     "variable" => SyntaxKind::Variable,
-                    "parameter" => SyntaxKind::Parameter,
+                    "variable.parameter" => SyntaxKind::Parameter,
                     "operator" => SyntaxKind::Operator,
                     _ => SyntaxKind::Default,
                 };
