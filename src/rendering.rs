@@ -1,18 +1,20 @@
-use crate::{colors::Theme, Presentation};
+use crate::{Presentation, Theme};
 use std::{
     fmt::Display,
-    io::{stdout, Write},
+    io::{self, stdout, Write},
     ops::Add,
     path::Path,
-    thread,
+    process, thread,
     time::Duration,
 };
+use streaming_iterator::StreamingIterator;
 use termion::{
     color::{self, Rgb},
     cursor::{self, DetectCursorPos},
     raw::IntoRawMode,
     style, terminal_size,
 };
+use tree_sitter::{Language, Parser, Query};
 use viuer::{print_from_file, Config};
 
 enum Header {
@@ -26,6 +28,124 @@ enum Header {
 struct CodeBlock {
     language: String,
     content: String,
+}
+
+#[derive(Debug)]
+enum SyntaxKind {
+    Keyword,
+    Function,
+    Type,
+    String,
+    Number,
+    Comment,
+    Variable,
+    Parameter,
+    Operator,
+    Default,
+}
+
+impl SyntaxKind {
+    fn color(&self, theme: &Theme) -> Rgb {
+        match self {
+            SyntaxKind::Keyword => theme.get_theme_colors().primary,
+            SyntaxKind::Function => theme.get_theme_colors().secondary,
+            SyntaxKind::Type => theme.get_theme_colors().tertiary,
+            SyntaxKind::String => Rgb(158, 206, 106),
+            SyntaxKind::Number => Rgb(247, 118, 142),
+            SyntaxKind::Comment => Rgb(150, 150, 150),
+            SyntaxKind::Variable => theme.get_theme_colors().accent,
+            SyntaxKind::Parameter => Rgb(224, 175, 104),
+            SyntaxKind::Operator => Rgb(187, 154, 247),
+            SyntaxKind::Default => Rgb(255, 255, 255),
+        }
+    }
+}
+
+struct SyntaxToken {
+    kind: SyntaxKind,
+    start: usize,
+    end: usize,
+}
+
+fn get_language_config(lang: &str) -> Option<(Language, &'static str)> {
+    match lang {
+        "rust" => Some((
+            tree_sitter_rust::LANGUAGE.into(),
+            include_str!("../queries/rust.scm"),
+        )),
+        "java" => Some((
+            tree_sitter_java::LANGUAGE.into(),
+            include_str!("../queries/java.scm"),
+        )),
+        "python" => Some((
+            tree_sitter_python::LANGUAGE.into(),
+            include_str!("../queries/python.scm"),
+        )),
+        _ => None,
+    }
+}
+
+fn parse_syntax(
+    content: &str,
+    language: &str,
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+) -> Vec<SyntaxToken> {
+    let mut tokens = Vec::new();
+
+    if let Some((lang, query_source)) = get_language_config(language) {
+        let mut parser = Parser::new();
+        parser.set_language(&lang).unwrap();
+
+        let tree = match parser.parse(content, None) {
+            Some(tree) => tree,
+            None => return Vec::new(),
+        };
+
+        let query = match Query::new(&lang, query_source) {
+            Ok(query) => query,
+            Err(e) => {
+                write!(
+                    stdout,
+                    "Error parsing query for language {}: {:?}",
+                    language, e
+                )
+                .unwrap();
+                stdout.flush().unwrap();
+                process::exit(1);
+            }
+        };
+
+        let mut query_cursor = tree_sitter::QueryCursor::new();
+        let mut matches = query_cursor.matches(&query, tree.root_node(), content.as_bytes());
+        while let Some(match_) = matches.next() {
+            for capture in match_.captures {
+                let node = capture.node;
+                let capture_name = &query.capture_names()[capture.index as usize];
+
+                let kind = match capture_name.to_string().as_str() {
+                    "keyword" => SyntaxKind::Keyword,
+                    "function" => SyntaxKind::Function,
+                    "type" => SyntaxKind::Type,
+                    "string" => SyntaxKind::String,
+                    "number" => SyntaxKind::Number,
+                    "comment" => SyntaxKind::Comment,
+                    "variable" => SyntaxKind::Variable,
+                    "parameter" => SyntaxKind::Parameter,
+                    "operator" => SyntaxKind::Operator,
+                    _ => SyntaxKind::Default,
+                };
+
+                tokens.push(SyntaxToken {
+                    kind,
+                    start: node.start_byte(),
+                    end: node.end_byte(),
+                });
+            }
+        }
+    }
+
+    tokens.sort_by_key(|t| t.start);
+    tokens
 }
 
 impl CodeBlock {
@@ -188,12 +308,6 @@ fn render_code_block(
     theme: &Theme,
 ) {
     let indent = 4;
-    let color = match block.language.as_str() {
-        "rust" => theme.get_theme_colors().primary,
-        "java" | "kotlin" => theme.get_theme_colors().secondary,
-        "python" => theme.get_theme_colors().tertiary,
-        _ => theme.get_theme_colors().accent,
-    };
 
     // Render language identifier
     write!(
@@ -201,24 +315,73 @@ fn render_code_block(
         "{}{}{}{}{}{}",
         cursor::Goto(indent, start_line - 1),
         style::Bold,
-        color::Fg(color),
+        color::Fg(theme.get_theme_colors().primary),
         block.language,
         color::Fg(color::Reset),
         style::Reset
     )
     .unwrap();
 
-    // Render code content
-    for (idx, line) in block.content.lines().enumerate() {
+    let tokens = parse_syntax(&block.content, &block.language, stdout);
+
+    // Track current position in the content
+    let mut current_pos = 0;
+    let mut current_line = 0;
+
+    for line in block.content.lines() {
+        let line_start = current_pos;
+        let line_end = line_start + line.len();
+
+        // Get tokens for this line
+        let line_tokens: Vec<_> = tokens
+            .iter()
+            .filter(|t| t.start >= line_start && t.start < line_end)
+            .collect();
+
+        let mut line_pos = 0;
+
+        // Write the line with syntax highlighting
         write!(
             stdout,
-            "{}{}{}{}",
-            cursor::Goto(indent, start_line + idx as u16),
-            color::Fg(color),
-            line,
-            color::Fg(color::Reset),
+            "{}",
+            cursor::Goto(indent, start_line + current_line as u16),
         )
         .unwrap();
+
+        if line_tokens.is_empty() {
+            // No syntax highlighting for this line
+            write!(stdout, "{}", line).unwrap();
+        } else {
+            // Apply syntax highlighting
+            for token in line_tokens {
+                // Write any text before the token
+                let token_start_in_line = token.start - line_start;
+                if token_start_in_line > line_pos {
+                    write!(stdout, "{}", &line[line_pos..token_start_in_line]).unwrap();
+                }
+
+                // Write the token with its color
+                let token_end_in_line = std::cmp::min(token.end - line_start, line.len());
+                write!(
+                    stdout,
+                    "{}{}{}",
+                    color::Fg(token.kind.color(theme)),
+                    &line[token_start_in_line..token_end_in_line],
+                    color::Fg(color::Reset)
+                )
+                .unwrap();
+
+                line_pos = token_end_in_line;
+            }
+
+            // Write any remaining text
+            if line_pos < line.len() {
+                write!(stdout, "{}", &line[line_pos..]).unwrap();
+            }
+        }
+
+        current_pos += line.len() + 1; // +1 for newline
+        current_line += 1;
     }
 }
 
