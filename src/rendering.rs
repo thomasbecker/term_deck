@@ -22,6 +22,33 @@ enum Header {
     Header4,
 }
 
+#[derive(Clone)]
+struct CodeBlock {
+    language: String,
+    content: String,
+}
+
+impl CodeBlock {
+    fn parse(text: &str) -> Option<Self> {
+        let mut lines = text.lines();
+        let first_line = lines.next()?;
+
+        if !first_line.starts_with("```") {
+            return None;
+        }
+
+        let language = first_line.trim_start_matches('`').trim().to_string();
+        let content = text
+            .lines()
+            .skip(1)
+            .take_while(|line| !line.starts_with("```"))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        Some(CodeBlock { language, content })
+    }
+}
+
 impl Header {
     fn color(&self, theme: &Theme) -> color::Rgb {
         match self {
@@ -68,18 +95,29 @@ pub fn render_slide(
         stdout,
         presentation.current_theme().get_theme_colors().primary,
     );
-    for (i, line) in presentation
-        .current_slide()
-        .lines()
-        .skip_while(|line| line.trim().is_empty())
-        .enumerate()
-    {
+    let lines: Vec<&str> = presentation.current_slide().lines().collect();
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i];
         if let Some(image_path) = extract_image_path(line) {
             let full_image_path = Path::new(presentation.presentation_file)
                 .parent()
                 .unwrap()
                 .join(image_path);
             render_image(&full_image_path);
+        } else if line.starts_with("```") {
+            let remaining_lines = lines[i..].join("\n");
+
+            if let Some(code_block) = CodeBlock::parse(&remaining_lines) {
+                render_code_block(
+                    &code_block,
+                    stdout,
+                    i as u16 + 4,
+                    presentation.current_theme(),
+                );
+                // Skip the remaining lines of the code block
+                i += code_block.content.lines().count() + 2; // +2 for start/end markers
+            }
         } else {
             let (line, color): (&str, Box<dyn Display>) = match line.starts_with("#") {
                 true => {
@@ -103,6 +141,7 @@ pub fn render_slide(
                 style::Reset
             )
             .unwrap();
+            i += 1;
         }
     }
     render_footer(presentation, stdout);
@@ -139,6 +178,47 @@ fn extract_image_path(line: &str) -> Option<&str> {
         Some(&line[start..end])
     } else {
         None
+    }
+}
+
+fn render_code_block(
+    block: &CodeBlock,
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+    start_line: u16,
+    theme: &Theme,
+) {
+    let indent = 4;
+    let color = match block.language.as_str() {
+        "rust" => theme.get_theme_colors().primary,
+        "java" | "kotlin" => theme.get_theme_colors().secondary,
+        "python" => theme.get_theme_colors().tertiary,
+        _ => theme.get_theme_colors().accent,
+    };
+
+    // Render language identifier
+    write!(
+        stdout,
+        "{}{}{}{}{}{}",
+        cursor::Goto(indent, start_line - 1),
+        style::Bold,
+        color::Fg(color),
+        block.language,
+        color::Fg(color::Reset),
+        style::Reset
+    )
+    .unwrap();
+
+    // Render code content
+    for (idx, line) in block.content.lines().enumerate() {
+        write!(
+            stdout,
+            "{}{}{}{}",
+            cursor::Goto(indent, start_line + idx as u16),
+            color::Fg(color),
+            line,
+            color::Fg(color::Reset),
+        )
+        .unwrap();
     }
 }
 
