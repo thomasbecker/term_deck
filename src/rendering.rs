@@ -326,9 +326,8 @@ fn render_code_block(
 
     // Track current position in the content
     let mut current_pos = 0;
-    let mut current_line = 0;
 
-    for line in block.content.lines() {
+    for (current_line, line) in block.content.lines().enumerate() {
         let line_start = current_pos;
         let line_end = line_start + line.len();
 
@@ -337,8 +336,6 @@ fn render_code_block(
             .iter()
             .filter(|t| t.start >= line_start && t.start < line_end)
             .collect();
-
-        let mut line_pos = 0;
 
         // Write the line with syntax highlighting
         write!(
@@ -352,36 +349,56 @@ fn render_code_block(
             // No syntax highlighting for this line
             write!(stdout, "{}", line).unwrap();
         } else {
-            // Apply syntax highlighting
-            for token in line_tokens {
-                // Write any text before the token
+            // Create a vector to track which parts of the line have been colored
+            let mut colored_positions = vec![false; line.len()];
+
+            // First pass: mark positions that will be colored
+            for token in &line_tokens {
                 let token_start_in_line = token.start - line_start;
-                if token_start_in_line > line_pos {
-                    write!(stdout, "{}", &line[line_pos..token_start_in_line]).unwrap();
-                }
-
-                // Write the token with its color
                 let token_end_in_line = std::cmp::min(token.end - line_start, line.len());
-                write!(
-                    stdout,
-                    "{}{}{}",
-                    color::Fg(token.kind.color(theme)),
-                    &line[token_start_in_line..token_end_in_line],
-                    color::Fg(color::Reset)
-                )
-                .unwrap();
-
-                line_pos = token_end_in_line;
+                for pos in token_start_in_line..token_end_in_line {
+                    colored_positions[pos] = true;
+                }
             }
 
-            // Write any remaining text
-            if line_pos < line.len() {
-                write!(stdout, "{}", &line[line_pos..]).unwrap();
+            // Second pass: write the line with highlighting
+            let mut current_pos = 0;
+            while current_pos < line.len() {
+                if !colored_positions[current_pos] {
+                    // Find the next position that needs coloring
+                    let mut end_pos = current_pos + 1;
+                    while end_pos < line.len() && !colored_positions[end_pos] {
+                        end_pos += 1;
+                    }
+                    // Write uncolored text
+                    write!(stdout, "{}", &line[current_pos..end_pos]).unwrap();
+                    current_pos = end_pos;
+                } else {
+                    // Find the token that starts at this position
+                    if let Some(token) = line_tokens
+                        .iter()
+                        .find(|t| (t.start - line_start) == current_pos)
+                    {
+                        let token_end_in_line = std::cmp::min(token.end - line_start, line.len());
+                        // Write colored text
+                        write!(
+                            stdout,
+                            "{}{}{}",
+                            color::Fg(token.kind.color(theme)),
+                            &line[current_pos..token_end_in_line],
+                            color::Fg(color::Reset)
+                        )
+                        .unwrap();
+                        current_pos = token_end_in_line;
+                    } else {
+                        // Skip this position if no token starts here
+                        current_pos += 1;
+                    }
+                }
             }
         }
 
         current_pos += line.len() + 1; // +1 for newline
-        current_line += 1;
     }
 }
 
